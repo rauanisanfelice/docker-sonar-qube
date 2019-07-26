@@ -1,0 +1,65 @@
+version: "3"
+
+services:
+  sonar-postgre:
+    image: postgres:10
+    container_name: "SONAR_POSTGRE"
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=SONAR_POSTGRE
+      - POSTGRES_USER=SONAR_POSTGRE
+      - POSTGRES_PASSWORD=sonar123
+    ports:
+      - 15000:5432
+    volumes:
+      - volume-potgre:/var/lib/postgresql:rw
+      - volume-potgre-data:/var/lib/postgresql/data:rw
+    networks:
+      - network-sonar-postgre
+
+  sonar-pgadmin:
+    image: dpage/pgadmin4
+    container_name: "SONAR_PGADMIN"
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin"
+      PGADMIN_DEFAULT_PASSWORD: "admin"
+    ports:
+      - 16000:80
+    depends_on:
+      - sonar-postgre
+    networks:
+      - network-sonar-postgre
+  
+  sonar-qube:
+    image: sonarqube:7.8-community
+    container_name: "SONAR_QUBE"
+    restart: unless-stopped
+    environment:
+      - SONARQUBE_JDBC_USERNAME=SONAR_POSTGRE
+      - SONARQUBE_JDBC_PASSWORD=sonar123
+      - SONARQUBE_JDBC_URL=jdbc:postgresql://sonar-postgre:5432/SONAR_POSTGRE
+      - SONAR_SCANNER_OPTS=-Xmx512m
+    ports:
+      - 9000:9000
+    depends_on:
+      - sonar-postgre
+    networks:
+      - network-sonar-postgre
+    volumes:
+      - sonarqube_conf:/opt/sonarqube/conf:rw
+      - sonarqube_data:/opt/sonarqube/data:rw
+      - sonarqube_logs:/opt/sonarqube/logs:rw
+      - sonarqube_extensions:/opt/sonarqube/extensions:rw
+
+networks:
+  network-sonar-postgre:
+    driver: bridge
+
+volumes:
+  volume-potgre:
+  volume-potgre-data:
+  sonarqube_conf:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:
